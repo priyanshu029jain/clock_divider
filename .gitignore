@@ -1,0 +1,10 @@
+# Ignore raw simulation data dumps
+*.vcd
+
+# Ignore compiled simulation binaries
+*.vvp
+
+# Ignore Xilinx Vivado log and journal junk files (if you use Vivado later)
+*.log
+*.jou
+xsim.dir/
