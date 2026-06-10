@@ -1,31 +1,74 @@
-# 🕒 Synchronous Clock Frequency Dividers
+# 🕒 Synchronous Clock Frequency Dividers IP Library
 
-A comprehensive hardware library of synthesizable clock management units designed in Verilog. This repository features robust architectures for clock frequency downscaling, encompassing fixed **Even Integer**, **Odd Integer**, and advanced **Fractional (Half-Integer)** division networks verified for digital system timing.
+A highly modular, synthesizable hardware vault showcasing digital clock management scaling architectures in Verilog. This repository contains structured RTL solutions for **Even Integer**, **Odd Integer**, and **Fractional (Half-duty cycle)** frequency downscaling networks.
 
 ---
 
 ## 📂 Repository Architecture
 
-The workspace isolates synthesizable design files from verification testbenches and visual simulation waveform data:
+The workspace segregates specific timing dividers into targeted subdirectories based on their mathematical scaling properties and behavioral characteristics:
 
 ```text
 CLOCK_DIVIDER/
-├── divider_by2.v         # Even integer divider (/2)
-├── divider_by3.v         # Odd integer divider (/3)
-├── divider_by3_half.v    # Fractional half-integer divider (/3.5)
-├── divider_by4.v         # Even integer divider (/4)
-├── divider_by5.v         # Odd integer divider (/5)
-├── divider_by5_half.v    # Fractional half-integer divider (/5.5)
-├── divider_by6.v         # Even integer divider (/6)
-├── divider_by7.v         # Odd integer divider (/7)
-├── divider_by7_half.v    # Fractional half-integer divider (/7.5)
-├── divider_by8.v         # Even integer divider (/8)
-├── divider_by10.v        # Even integer divider (/10)
-├── divider_by12.v        # Even integer divider (/12)
-├── divider_byEVEN.v      # Parameterized generic even divider block
-├── testbench.v           # Universal Testbench Verification Suite
-├── waveform_by2.png      # Verified simulation wave for /2
-├── waveform_by3.png      # Verified simulation wave for /3
-├── waveform_by3_half.png # Verified simulation wave for /3.5
-└── README.md             # Repository Documentation Matrix
+├── divided_by_enven/               # Even Integer Divider Ecosystem
+│   ├── by2/
+│   │   ├── divider_by2.v
+│   │   └── waveform_by2.png
+│   ├── by4/
+│   ├── by6/
+│   ├── by8/
+│   ├── by10/
+│   └── divider_byEVEN.v            # Parameterized generic even divider engine
+├── divided_by_odd/                 # Odd Integer Divider Ecosystem
+│   ├── by3/
+│   │   ├── divider_by3.v
+│   │   └── waveform_by3.png
+│   ├── by5/
+│   └── by7/
+├── divided_by_odd_50/              # Fractional / Half-Integer Divider Ecosystem
+│   ├── by3/
+│   │   ├── divider_by3_half.v
+│   │   └── waveform_by3_half.png   # Verified /3.5 timing wave
+│   ├── by5/
+│   └── by7/
+├── .gitignore                      # Workspace artifact filter
+├── testbench.v                     # Universal Verification Testbench
+└── README.md                       # Comprehensive Documentation Matrix
 ```
+
+## 🧠 Architectural Overview Matrix
+### 1. Even Integer Division (divided_by_enven)
+* **Behavior:** Tracks the primary master clock pulses using a synchronous counter.
+* **Duty Cycle:** Inherently produces a perfect 50% duty cycle by toggling the output flag cleanly whenever the tracking 
+counter matches the half-period target threshold $\frac{N}{2}$. 
+
+### 2. Simple Odd Integer Division (`divided_by_odd`)
+* **Behavior:** Implements basic frequency downscaling for odd numbers (e.g., divide-by-3, divide-by-5, divide-by-7).
+* **Duty Cycle:** This architecture produces a **non-50% duty cycle**. Because a standard counter increments strictly on a single clock edge (usually `posedge`), an odd divisor $N$ cannot be split into perfectly equal whole integers. 
+* **Design Strategy:** The output clock stays high for $\frac{N-1}{2}$ cycles and low for $\frac{N+1}{2}$ cycles (or vice versa). For example, in a simple divide-by-3 circuit, the clock is high for 1 master cycle and low for 2 master cycles, resulting in an asymmetric **33.3% duty cycle**. This is highly efficient when the downstream logic only cares about clock edges rather than pulse width symmetry.
+
+### 3. Odd Integer Division with 50% Duty Cycle (`divided_by_odd_50`)
+* **Behavior:** Implements odd-integer frequency downscaling (e.g., divide-by-3, divide-by-5, divide-by-7) while ensuring the output clock maintains a flawless **50% duty cycle**.
+* **The Hardware Challenge:** Standard synchronous counters increment only on a single clock edge (usually `posedge`). For an odd divisor $N$, dividing the clock cycles evenly using a single edge results in an asymmetric duty cycle of $\frac{N-1}{2N}\%$ or $\frac{N+1}{2N}\%$ (e.g., a divide-by-3 clock would be high for 1 cycle and low for 2 cycles—a 33.3% duty cycle).
+* **Design Strategy:** To achieve a perfect 50% duty cycle, the module leverages **dual-edge tracking**:
+  1. An internal counter generates a phase clock on the **rising edge** (`posedge`) of the master clock.
+  2. A second identical counter/register generates a phase clock on the **falling edge** (`negedge`) of the master clock.
+  3. The final output clock is generated by performing a combinational **OR** (or **AND**) operation between these two phase-shifted clocks. This effectively "steals" a half-cycle from the master clock, balancing the high and low periods perfectly to achieve a true 50% output.
+
+
+## 💻 Simulation & Verification Flow
+All IP modules are structurally verified against behavioral parameters utilizing open-source toolchains (Icarus Verilog) and visualized through waveform extraction profiles.
+Terminal Simulation Execution:
+To verify a target architecture, run your compilation pipeline directly referencing the unified testbench module:
+
+```text
+# 1. Compile the chosen design module alongside the testbench setup
+iverilog -o sim_engine.vvp ./divided_by_odd_50/by3/divider_by3_half.v testbench.v
+
+# 2. Run the simulation to parse execution traces
+vvp sim_engine.vvp
+
+# 3. Launch GTKWave to visually inspect the timing waveforms
+gtkwave dump.vcd
+```
+

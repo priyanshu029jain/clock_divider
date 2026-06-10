@@ -1,10 +1,18 @@
-# Ignore raw simulation data dumps
+# ==========================================
+# Toolchain Compilation & Simulation Outputs
+# ==========================================
+# Ignore raw simulation value change dump logs (can get massive)
 *.vcd
 
-# Ignore compiled simulation binaries
+# Ignore compiled Icarus Verilog execution binaries
 *.vvp
 
-# Ignore Xilinx Vivado log and journal junk files (if you use Vivado later)
+# ==========================================
+# EDA Vendor Log Files (Vivado/Quartus Junk)
+# ==========================================
 *.log
 *.jou
+*.str
+*.txt
 xsim.dir/
+.Xil/
